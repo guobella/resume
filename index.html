@@ -551,6 +551,19 @@
     color:var(--muted);font-size:11.5px;cursor:pointer;font-family:var(--mono);transition:all .2s;
   }
   .askme-quick button:hover{border-color:var(--acc);color:var(--acc);}
+  .askme-bot.loading{color:var(--dim);}
+  .askme-input-row{padding:0 14px 14px;display:flex;gap:7px;}
+  #askme-input{
+    flex:1;min-width:0;padding:8px 11px;border-radius:999px;border:1px solid var(--border);
+    background:var(--bg3);color:var(--ink);font-size:12.5px;font-family:var(--sans);outline:none;
+  }
+  #askme-input:focus{border-color:var(--acc);}
+  #askme-send{
+    padding:8px 14px;border-radius:999px;border:1px solid var(--acc);background:var(--acc-dim);
+    color:var(--acc);font-size:12px;font-family:var(--mono);cursor:pointer;transition:opacity .2s;
+  }
+  #askme-send:hover{opacity:.8;}
+  #askme-send:disabled{opacity:.5;cursor:default;}
   @media (max-width:640px){
     #askme-widget{right:12px;bottom:66px;}
     #askme-window{width:min(280px, calc(100vw - 24px));}
@@ -1124,6 +1137,10 @@
       <button data-q="你在找什么机会？">求职方向</button>
       <button data-q="你有什么技能？">技能栈</button>
     </div>
+    <div class="askme-input-row">
+      <input id="askme-input" type="text" placeholder="输入你的问题…" autocomplete="off">
+      <button id="askme-send" type="button" aria-label="发送">发送</button>
+    </div>
   </div>
   <button id="askme-toggle" aria-label="打开 Ask me 聊天框" type="button">
     <img src="assets/askme-avatar.png" alt="郭彦靖 AI 分身头像">
@@ -1159,32 +1176,169 @@
   });
   bgmAudio.addEventListener('ended', function(){ bgmPlayer.classList.remove('playing'); });
 
-  // Ask me 聊天组件
-  var askmeQA = {
-    '你在哪实习过？': '四段实习，倒序：\n蓝色光标 BlueAI（出海广告，现在职）\n美团 · 到店团购用增（搜推策略）\n奇虎 360 · 广告商业化（搜索广告）\n腾讯 PCG（大模型 / SFT / RAG）',
-    '你最有成就感的项目？': '美团：独立 own 搜索干预 / 拉黑 / 负反馈三种基建工具。\n其中 AI 素材优化项目，从高销 Top500 打到中小商家，最终特团 CTR +0.65%，支付 +0.74%。',
-    '你在找什么机会？': 'AI 产品经理 / 策略产品 / PDE。\n2027 届硕士，当前 Base 北京，城市 open，可实习可全职。',
-    '你有什么技能？': 'SQL 取数 · PRD · AB 实验 · 搜推策略\nPrompt 工程 / RAG / SFT / MCP / 多 Agent\nVibe Coding（Codex / Claude Code / Gemini）'
-  };
+  // Ask me 聊天组件（接入 Cloudflare Worker 代理的 LLM 接口）
+  var PROXY_URL = "https://resumeai.guoyanjing0901.workers.dev/";
+  var SYSTEM_PROMPT = `
+你是郭彦靖的AI简历分身，面向HR、面试官进行问答。
+硬性约束：**只允许使用下方提供的全部简历事实资料作答，严禁编造任何实习、项目、指标、荣誉、经历**；如果问题在资料中没有对应信息，固定回复："该信息不在资料范围，请查阅主页简历或邮件联系本人。"
+
+输出规范（严格遵守）：
+1、输出风格：信息密度高、简洁有力，优先事实、动作、量化业务指标；
+2、格式：优先使用项目符号•，适当换行，不要大段散文，不要心理描写、不要冗余背景铺垫；
+3、项目回答固定结构：•职责 •核心动作 •业务结果，结果必须带上原始数字指标；
+4、不要额外润色扩写，忠于原始简历内容，不要脑补业务背景。
+
+====完整事实资料====
+## 个人基础信息
+姓名：郭彦靖
+毕业规划：2027届硕士研究生
+教育经历：
+1、硕士｜首都师范大学，水利工程；跨专业转向AI策略产品；研究方向：基于COFM方法的全球地下水储量变化研究；工程思维、数据训练背景。
+2、本科｜天津城建大学，地理信息科学；主修GIS空间分析、遥感、Python、数据库；成绩专业前10%。
+
+求职意向：
+意向岗位：AI产品经理 / 策略产品经理 / PDE；
+地点：Base北京，其他城市可以接受；
+工作状态：可实习，可全职；
+联系方式：邮箱guoyanjing0901@163.com；电话187 3558 8522。
+
+## 四段实习经历（由新到旧）
+### 1、蓝色光标 · BlueAI部门｜DSP广告产品经理（2026.07‑至今）
+- 参与出海电商AI物料生产工作流从0到1平台化设计；
+- 搭建多Agent广告创意设计策略，将AIGC嵌入批量物料生成链路；
+业务方向：出海广告、AIGC物料、多Agent策略。
+
+### 2、美团 · 到店团购用增部门｜搜推策略产品经理（2025.10‑2026.03）
+- 独立负责搜索干预、拉黑、搜索负反馈三套搜推基建工具；完整走完需求分析‑PRD‑评审‑研发协同‑上线；输出白皮书、操作手册，负责运营培训；
+- 搜索干预迭代v2.0/v3.0，支持底纹词、SUG词、纠错条灵活配置；
+- 拉黑工具：实现品牌/POI/城市/deal多维度批量拉黑，提升搜索质量与运营效率；
+- 搜索负反馈：构建用户负反馈机制，基于点击分析迭代算法；
+- AI素材优化项目：先验证高销Top500商家，发现点击提升但无转化增益；调整主攻有曝光低订单中小商家；最终特团场景CTR+0.65%，支付+0.74%；后续升级自动化生图版本。
+
+###3、奇虎360 ·广告商业化部门｜AI搜索广告产品经理（2025.04‑2025.09）
+- 相关性策略：从0‑1搭建query‑广告召回相关性评测标准，覆盖中插、非中插广告、落地页；对齐产研、标注团队；badcase率‑10%；
+- 优化乱买词过滤策略，补充行业分类、商业价值判断；PRD推动上线，CTR+5%，CPC+3%；
+- 360搜索Box栏目广告MCP接入；搭建广告知识库，调试Prompt，形成"query意图识别‑内容结构优化‑投放路径自适应"策略；
+- SQL监控大盘消费、PV、CPM、CPC，定位波动评估策略效果；
+- 独立负责电销场景AI Agent从0‑1；模块分为通话前、通话后；客户背调、录音智能评分、复盘建议；知识库搭建、CRM接入。
+
+###4、腾讯PCG｜AI大模型产品实习生（2024.12‑2025.02）
+- 参与腾讯搜索大模型SFT指令微调；分析亿级搜索日志，提炼金融、医疗垂类高频需求，沉淀1500+高质量Q&A；
+- 带领10人团队做RAG优化；设计预标注‑交叉校验机制与数据SOP；数据返工率‑40%，单日工作效率+30%。
+
+## 个人项目（vibe coding 作品）
+1、Offer Getter｜AI求职助手：独立产品设计+原型开发；求职场景，岗位解析、模拟面试、复盘建议。
+2、策略数据看板：Vibe Coding完成，指标交互式可视化原型。
+3、本个人主页portfolio：全部使用Vibe Coding完成；Codex、Claude Code、Gemini等协作实现。
+
+## 技能栈
+1、AI协作栈：Codex、Claude Code；Vibe Coding，一句话快速产出可交互原型，多轮迭代。
+2、策略产品：搜推策略、A/B实验、相关性评测、素材策略优化；通过badcase归因迭代拿到正向业务指标。
+3、数据内功：SQL取数、Python、大盘指标监控、问题定位、策略复盘归因。
+4、AI技术理解：Prompt工程、RAG优化、SFT数据建设、MCP接入、多Agent设计、机器学习基础。
+5、产品基本功：PRD撰写、需求评审、跨团队协作、原型设计，对齐研发、算法、标注团队落地需求。
+
+## 竞赛荣誉
+GIS大赛全国三等奖；新工科竞赛三等奖；挑战杯二等奖。
+
+## 个人产品理念
+核心特质：懂策略、会拆解业务问题，可以用AI快速完成MVP验证。
+搜广推本质是人货匹配；策略不是拍脑袋，要从badcase单点问题沉淀为可复用策略；遇到业务问题优先看数据，拆清根因，再用AB实验验证。
+善用AI做提效工具，但业务判断、需求决策由人主导。
+
+====输出示例（严格模仿此格式回答）
+问：介绍美团实习项目
+答：
+• 职责：搜推策略产品，独立负责搜索干预、拉黑、负反馈搜推基建，以及AI素材优化项目
+• 动作：完成PRD、评审、上线全流程；针对商家素材问题做分层实验，调整目标人群为中小商家
+• 结果：特团场景CTR +0.65%，支付 +0.74%
+
+问：你的求职意向
+答：
+• 身份：2027届硕士研究生
+• 目标岗位：AI产品经理 / 策略产品经理 / PDE
+• 地点：Base北京，可接受其他城市
+
+问：介绍360相关性项目
+答：
+• 职责：搜索广告相关性策略产品
+• 动作：从0‑1搭建多场景评测标准，对齐产研标注团队；上线乱买词过滤策略
+• 结果：相关性badcase率‑10%，CTR+5%，CPC+3%
+`;
+
   var askmeToggle = document.getElementById('askme-toggle');
   var askmeWindow = document.getElementById('askme-window');
   var askmeMessages = document.getElementById('askme-messages');
+  var askmeInput = document.getElementById('askme-input');
+  var askmeSend = document.getElementById('askme-send');
   askmeToggle.addEventListener('click', function(){
     askmeWindow.classList.toggle('open');
   });
+
+  function appendUserMsg(text){
+    var u = document.createElement('div');
+    u.className = 'askme-user';
+    u.textContent = text;
+    askmeMessages.appendChild(u);
+    askmeMessages.scrollTop = askmeMessages.scrollHeight;
+  }
+  function appendBotMsg(text){
+    var b = document.createElement('div');
+    b.className = 'askme-bot';
+    b.textContent = text;
+    askmeMessages.appendChild(b);
+    askmeMessages.scrollTop = askmeMessages.scrollHeight;
+    return b;
+  }
+
+  async function callLLM(userQuestion){
+    askmeSend.disabled = true;
+    var loadingEl = appendBotMsg('思考中…');
+    loadingEl.classList.add('loading');
+    try{
+      var res = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          messages: [
+            {role: 'system', content: SYSTEM_PROMPT},
+            {role: 'user', content: userQuestion}
+          ]
+        })
+      });
+      var json = await res.json();
+      var answer = json.choices[0].message.content;
+      loadingEl.textContent = answer;
+      loadingEl.classList.remove('loading');
+    }catch(e){
+      loadingEl.textContent = 'AI 分身暂时出错，可以看页面上的简历内容，或者邮件联系我。';
+      loadingEl.classList.remove('loading');
+      console.error(e);
+    }finally{
+      askmeSend.disabled = false;
+    }
+  }
+
   document.querySelectorAll('.askme-quick button').forEach(function(btn){
     btn.addEventListener('click', function(){
       var q = btn.getAttribute('data-q');
-      var u = document.createElement('div');
-      u.className = 'askme-user';
-      u.textContent = q;
-      askmeMessages.appendChild(u);
-      var b = document.createElement('div');
-      b.className = 'askme-bot';
-      b.textContent = askmeQA[q] || '这个问题我还没学会，可以直接发邮件问我 :)';
-      askmeMessages.appendChild(b);
-      askmeMessages.scrollTop = askmeMessages.scrollHeight;
+      appendUserMsg(q);
+      callLLM(q);
     });
+  });
+
+  askmeSend.addEventListener('click', function(){
+    var text = askmeInput.value.trim();
+    if(!text) return;
+    appendUserMsg(text);
+    askmeInput.value = '';
+    callLLM(text);
+  });
+  askmeInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      askmeSend.click();
+    }
   });
 
   // 滚动入场
