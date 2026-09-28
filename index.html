@@ -1176,8 +1176,8 @@
   });
   bgmAudio.addEventListener('ended', function(){ bgmPlayer.classList.remove('playing'); });
 
-  // Ask me 聊天组件（接入 Cloudflare Worker 代理的 LLM 接口）
-  var PROXY_URL = "https://resumeai.guoyanjing0901.workers.dev/";
+  // Ask me 聊天组件（接入腾讯云函数 SCF 代理的 LLM 接口，workers.dev 在国内被墙后迁移）
+  var PROXY_URL = "https://1497296387-5sh0fdyg4f.ap-guangzhou.tencentscf.com/";
   var SYSTEM_PROMPT = `
 你是郭彦靖的AI简历分身，面向HR、面试官进行问答。
 硬性约束：**只允许使用下方提供的全部简历事实资料作答，严禁编造任何实习、项目、指标、荣誉、经历**；如果问题在资料中没有对应信息，固定回复："该信息不在资料范围，请查阅主页简历或邮件联系本人。"
